@@ -10,3 +10,6 @@ declare global {
 }
 
 export {};
+
+//En otras palabras. Solamente se utiliza para agregar la propiedad auth al objeto Request de Express,
+// y no afecta a otros tipos de Request que puedan existir en otras bibliotecas o frameworks.

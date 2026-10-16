@@ -23,7 +23,7 @@ Esta primera iteración establece la infraestructura fundacional del sistema uti
 
 1. Clona este repositorio y navega a la carpeta del proyecto:
    ```bash
-   git clone [https://github.com/Karlos-A/Eatz_TDS.git](https://github.com/Karlos-A/Eatz_TDS.git)
+   git clone https://github.com/Karlos-A/Eatz_TDS.git
    cd Eatz_TDS
    ```
 

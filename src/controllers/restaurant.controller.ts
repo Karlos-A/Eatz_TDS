@@ -13,12 +13,28 @@ export const createRestaurant: RequestHandler = async (request, response) => {
 };
 
 export const listRestaurants: RequestHandler = async (request, response) => {
-  const { category, search } = request.query;
-  const restaurants = await RestaurantService.list({
+  const { category, search, page, limit } = request.query;
+  const result = await RestaurantService.list({
     category: typeof category === 'string' ? category : undefined,
-    search: typeof search === 'string' ? search : undefined
+    search: typeof search === 'string' ? search : undefined,
+    page,
+    limit
   });
-  response.status(200).json({ status: 'success', data: restaurants });
+  response.status(200).json({
+    status: 'success',
+    data: result.items,
+    pagination: { page: result.page, limit: result.limit, total: result.total, pages: result.pages }
+  });
+};
+
+export const listMyRestaurants: RequestHandler = async (request, response) => {
+  if (!request.auth) throw new AppError(401, 'UNAUTHORIZED', 'Authentication required');
+  const result = await RestaurantService.listByOwner(request.auth.userId, request.query.page, request.query.limit);
+  response.status(200).json({
+    status: 'success',
+    data: result.items,
+    pagination: { page: result.page, limit: result.limit, total: result.total, pages: result.pages }
+  });
 };
 
 export const getRestaurant: RequestHandler = async (request, response) => {
@@ -26,6 +42,7 @@ export const getRestaurant: RequestHandler = async (request, response) => {
   const restaurant = await RestaurantService.getById(id);
   response.status(200).json({ status: 'success', data: restaurant });
 };
+
 
 export const updateRestaurant: RequestHandler = async (request, response) => {
   if (!request.auth) throw new AppError(401, 'UNAUTHORIZED', 'Authentication required');

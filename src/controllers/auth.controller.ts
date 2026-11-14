@@ -2,6 +2,7 @@
 // Recibe request de registro y login, llama al AuthService y devuelve la respuesta al cliente
 import type { RequestHandler } from 'express';
 import { AuthService } from '../services/auth.service.js';
+import { AppError } from '../utils/app-error.js';
 
 export const register: RequestHandler = async (request, response) => {
   const result = await AuthService.register(request.body);
@@ -23,3 +24,9 @@ export const login: RequestHandler = async (request, response) => {
 
 // Nota: No se necesitan try/catch porque Express 5 captura automáticamente los errores y los pasa al middleware de manejo de errores.
 // -KA
+
+export const getCurrentUser: RequestHandler = async (request, response) => {
+  if (!request.auth) throw new AppError(401, 'UNAUTHORIZED', 'Authentication required');
+  const user = await AuthService.getCurrentUser(request.auth.userId);
+  response.status(200).json({ status: 'success', data: user });
+};

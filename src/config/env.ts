@@ -17,5 +17,9 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   mongoUri: required('MONGO_URI'),
   jwtSecret: required('JWT_SECRET'),
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '24h'
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '24h',
+  corsOrigins: (process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
 };

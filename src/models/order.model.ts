@@ -3,6 +3,10 @@ import { model, Schema, Document, Types } from 'mongoose';
 export const orderStatuses = ['pending', 'preparing', 'ready', 'delivered', 'cancelled'] as const;
 export type OrderStatus = (typeof orderStatuses)[number];
 
+export function isOrderStatus(value: unknown): value is OrderStatus {
+  return typeof value === 'string' && orderStatuses.some((status) => status === value);
+}
+
 export const paymentMethods = ['on_delivery', 'card'] as const;
 export const paymentStatuses = ['pending', 'paid'] as const;
 
@@ -33,7 +37,7 @@ const orderItemSchema = new Schema<IOrderItem>(
     menuItemId: { type: Schema.Types.ObjectId, ref: 'MenuItem', required: true },
     name: { type: String, required: true },
     unitPrice: { type: Number, required: true, min: 0 },
-    quantity: { type: Number, required: true, min: 1 },
+    quantity: { type: Number, required: true, min: 1, validate: Number.isInteger },
     subtotal: { type: Number, required: true, min: 0 }
   },
   { _id: false } // No se necesita un ID autogenerado para cada subdocumento de item

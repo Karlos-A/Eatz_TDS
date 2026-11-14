@@ -16,8 +16,17 @@ export const listMenuItems: RequestHandler = async (request, response) => {
   const restaurantId = request.params.restaurantId as string;
   const availableOnly = request.query.available === 'true';
 
-  const menuItems = await MenuItemService.listByRestaurant(restaurantId, availableOnly);
-  response.status(200).json({ status: 'success', data: menuItems });
+  const result = await MenuItemService.listByRestaurant(
+    restaurantId,
+    availableOnly,
+    request.query.page,
+    request.query.limit
+  );
+  response.status(200).json({
+    status: 'success',
+    data: result.items,
+    pagination: { page: result.page, limit: result.limit, total: result.total, pages: result.pages }
+  });
 };
 
 export const updateMenuItem: RequestHandler = async (request, response) => {

@@ -1,11 +1,13 @@
 import { app } from './app.js';
 import { connectDatabase } from './config/database.js';
 import { env } from './config/env.js';
+import { seedAdmin } from './config/seed-admin.js';
 
 async function start(): Promise<void> {
   try {
     // Conectar a MongoDB
     await connectDatabase();
+    await seedAdmin(); // Iniciar al administrador
     
     // Levantar el servidor Express
     app.listen(env.port, () => {

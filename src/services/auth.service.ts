@@ -11,19 +11,22 @@ export class AuthService {
   static async register(data: unknown) {
     const body = readBody(data);
     assertAllowedFields(body, ['name', 'email', 'password', 'role']);
+    
     const name = requireText(body.name, 'Name', 100);
     const email = requireText(body.email, 'Email', 254).toLowerCase();
     const password = body.password;
-    const role = body.role ?? 'user';
+
+    // Validación estricta para bloquear escalamiento de privilegios
+    if ('role' in body && body.role !== 'user') {
+      throw new AppError(403, 'FORBIDDEN_ROLE_REGISTRATION', 'Registration of roles other than "user" is not allowed');
+    }
+    const role = 'user'; // Forzado incondicional
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       throw new AppError(400, 'VALIDATION_ERROR', 'Email is not valid');
     }
     if (typeof password !== 'string' || password.length < 8 || password.length > 72) {
       throw new AppError(400, 'VALIDATION_ERROR', 'Password must be between 8 and 72 characters');
-    }
-    if (role !== 'client' && role !== 'user') {
-      throw new AppError(400, 'VALIDATION_ERROR', 'Role must be client or user');
     }
 
     const existingUser = await User.findOne({ email });

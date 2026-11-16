@@ -11,9 +11,11 @@ import {
   requireObjectId,
   requireText
 } from '../utils/request-validation.js';
+import { SubscriptionService } from './subscription.service.js';
 
 export class RestaurantService {
   static async create(ownerId: string, data: unknown) {
+    await SubscriptionService.assertActiveSubscription(ownerId);
     const body = readBody(data);
     assertAllowedFields(body, ['name', 'description', 'category', 'address', 'phone']);
     const restaurant = await Restaurant.create({
@@ -55,7 +57,8 @@ export class RestaurantService {
   }
 
 static async update(id: string, ownerId: string, data: unknown) {
-    requireObjectId(id);
+  await SubscriptionService.assertActiveSubscription(ownerId);  
+  requireObjectId(id);
     const body = readBody(data);
     assertAllowedFields(body, ['name', 'description', 'category', 'address', 'phone']);
     if (Object.keys(body).length === 0) {

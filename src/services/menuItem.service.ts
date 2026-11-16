@@ -12,6 +12,7 @@ import {
   requireObjectId,
   requireText
 } from '../utils/request-validation.js';
+import { SubscriptionService } from './subscription.service.js';
 
 function requirePrice(value: unknown): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1000000) {
@@ -24,6 +25,7 @@ function requirePrice(value: unknown): number {
 export class MenuItemService {
   // Valida el artículo y comprueba la propiedad antes de crearlo.
   static async create(ownerId: string, data: unknown) {
+    await SubscriptionService.assertActiveSubscription(ownerId);
     const body = readBody(data);
     assertAllowedFields(body, ['restaurantId', 'name', 'description', 'price', 'category']);
     if (typeof body.restaurantId !== 'string') {
@@ -67,6 +69,7 @@ export class MenuItemService {
   }
 
   static async update(id: string, ownerId: string, data: unknown) {
+    await SubscriptionService.assertActiveSubscription(ownerId);
     requireObjectId(id);
     const body = readBody(data);
     assertAllowedFields(body, ['name', 'description', 'price', 'category', 'available']);

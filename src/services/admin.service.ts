@@ -2,6 +2,7 @@ import { User } from '../models/user.model.js';
 import { AppError } from '../utils/app-error.js';
 import { hashPassword } from '../utils/password.js';
 import { assertAllowedFields, readBody, requireText } from '../utils/request-validation.js';
+import { SubscriptionService } from './subscription.service.js';
 
 export class AdminService {
   static async createClient(data: unknown) {
@@ -33,6 +34,8 @@ export class AdminService {
       isActive: true 
     });
 
+    await SubscriptionService.createFreeTrial(client.id);
+    
     return { 
       id: client.id, 
       name: client.name, 

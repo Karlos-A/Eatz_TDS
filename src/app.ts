@@ -8,6 +8,7 @@ import { restaurantRouter } from './routes/restaurant.routes.js';
 import { menuItemRouter } from './routes/menuItem.routes.js';
 import { orderRouter } from './routes/order.routes.js';
 import { adminRouter } from './routes/admin.routes.js';
+import { subscriptionRouter } from './routes/subscription.routes.js';
 
 // Importación de Middlewares de Error
 import { errorHandler, notFound } from './middlewares/error.middleware.js';
@@ -30,7 +31,7 @@ app.use('/api/restaurants', restaurantRouter);
 app.use('/api/menu-items', menuItemRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/admin', adminRouter);
-
+app.use('/api/subscription', subscriptionRouter);
 // Manejo de Rutas Inexistentes y Errores Globales
 app.use(notFound);
 app.use(errorHandler);

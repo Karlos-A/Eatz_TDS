@@ -13,6 +13,7 @@ import {
   requireObjectId,
   requireText
 } from '../utils/request-validation.js';
+import { SubscriptionService } from './subscription.service.js';
 
 export class OrderService {
   // Valida cantidades y datos del pedido; el precio siempre se obtiene del catálogo.
@@ -32,15 +33,12 @@ export class OrderService {
     if (paymentMethod !== 'on_delivery' && paymentMethod !== 'card') {
       throw new AppError(400, 'VALIDATION_ERROR', 'Payment method must be on_delivery or card');
     }
-    if (paymentMethod === 'card') {
-      throw new AppError(501, 'PAYMENT_NOT_CONFIGURED', 'Card payments are not configured');
-    }
 
     const restaurant = await Restaurant.findById(body.restaurantId);
     if (!restaurant || !restaurant.isActive) {
       throw new AppError(404, 'NOT_FOUND', 'Restaurant not found or inactive');
     }
-
+    
     let totalCents = 0;
     const processedItems: Array<{
       menuItemId: string;
@@ -49,7 +47,9 @@ export class OrderService {
       quantity: number;
       subtotal: number;
     }> = [];
-
+    
+    await SubscriptionService.assertActiveSubscription(restaurant.ownerId.toString());
+    
     for (const rawItem of body.items) {
       const item = readBody(rawItem);
       assertAllowedFields(item, ['menuItemId', 'quantity']);
@@ -83,6 +83,8 @@ export class OrderService {
       });
     }
 
+    const paymentStatus = paymentMethod === 'card' ? 'paid' : 'pending';
+
     const order = await Order.create({
       customerId,
       restaurantId: body.restaurantId,
@@ -90,7 +92,7 @@ export class OrderService {
       total: totalCents / 100,
       deliveryAddress,
       paymentMethod,
-      paymentStatus: 'pending',
+      paymentStatus,
       notes
     });
 

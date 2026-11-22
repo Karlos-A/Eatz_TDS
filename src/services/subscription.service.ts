@@ -1,6 +1,6 @@
 import { Subscription } from '../models/subscription.model.js';
 import { AppError } from '../utils/app-error.js';
-import { requireObjectId } from '../utils/request-validation.js';
+import { parsePagination, requireObjectId } from '../utils/request-validation.js';
 
 export class SubscriptionService {
   static async createFreeTrial(ownerId: string) {
@@ -23,6 +23,7 @@ export class SubscriptionService {
       endDate,
       paymentMethod: 'none',
       paymentStatus: 'none',
+      paymentMode: 'none',
       trialUsed: true
     });
   }
@@ -48,13 +49,108 @@ export class SubscriptionService {
     if (plan === 'semiannual') newEndDate.setDate(newEndDate.getDate() + 180);
     if (plan === 'annual') newEndDate.setDate(newEndDate.getDate() + 365);
 
-    sub.plan = plan;
-    sub.status = 'active';
-    sub.endDate = newEndDate;
+    sub.pendingPlan = plan;
+    sub.pendingEndDate = newEndDate;
     sub.paymentMethod = paymentMethod;
-    sub.paymentStatus = 'paid'; // Se simula el cobro
+    sub.paymentStatus = 'pending';
+    sub.paymentMode = 'simulated';
 
     return await sub.save();
+  }
+
+  static async confirmPayment(ownerId: string, data: unknown) {
+    requireObjectId(ownerId);
+    const body = data && typeof data === 'object' ? data as Record<string, unknown> : {};
+    if (body.status !== 'paid' && body.status !== 'failed') {
+      throw new AppError(400, 'VALIDATION_ERROR', 'Payment status must be paid or failed');
+    }
+
+    const sub = await Subscription.findOne({ ownerId });
+    if (!sub) throw new AppError(404, 'NOT_FOUND', 'Subscription record not found');
+    if (sub.paymentStatus !== 'pending') {
+      throw new AppError(409, 'PAYMENT_NOT_PENDING', 'There is no payment awaiting confirmation');
+    }
+
+    sub.paymentStatus = body.status;
+    if (body.status === 'paid') {
+      if (!sub.pendingPlan || !sub.pendingEndDate) {
+        throw new AppError(409, 'PAYMENT_CONFIRMATION_INVALID', 'The pending renewal is incomplete');
+      }
+      sub.plan = sub.pendingPlan;
+      sub.status = 'active';
+      sub.endDate = sub.pendingEndDate;
+    }
+    sub.pendingPlan = undefined;
+    sub.pendingEndDate = undefined;
+    return await sub.save();
+  }
+
+  static async getMySubscription(ownerId: string) {
+    requireObjectId(ownerId);
+    const sub = await Subscription.findOne({ ownerId });
+    if (!sub) {
+      throw new AppError(404, 'NOT_FOUND', 'Subscription record not found');
+    }
+
+    if (sub.status === 'active' && sub.endDate < new Date()) {
+      sub.status = 'expired';
+      await sub.save();
+    }
+
+    const remainingDays = sub.status === 'active'
+      ? Math.max(0, Math.ceil((sub.endDate.getTime() - Date.now()) / 86400000))
+      : 0;
+
+    return {
+      subscription: sub,
+      remainingDays
+    };
+  }
+
+  static async cancelPendingRenewal(ownerId: string) {
+    requireObjectId(ownerId);
+    const sub = await Subscription.findOne({ ownerId });
+    if (!sub) {
+      throw new AppError(404, 'NOT_FOUND', 'Subscription record not found');
+    }
+    if (sub.paymentStatus !== 'pending' || !sub.pendingPlan) {
+      throw new AppError(409, 'NO_PENDING_RENEWAL', 'There is no pending renewal to cancel');
+    }
+
+    sub.pendingPlan = undefined;
+    sub.pendingEndDate = undefined;
+    sub.paymentStatus = 'failed';
+    sub.paymentMode = 'simulated';
+    return await sub.save();
+  }
+
+  static async listSubscriptions(filters: { status?: unknown; plan?: unknown; page?: unknown; limit?: unknown }) {
+    const pagination = parsePagination(filters.page, filters.limit);
+    const query: Record<string, unknown> = {};
+
+    if (filters.status !== undefined) {
+      if (!['active', 'expired', 'cancelled'].includes(String(filters.status))) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'Invalid subscription status');
+      }
+      query.status = filters.status;
+    }
+    if (filters.plan !== undefined) {
+      if (!['free_trial', 'monthly', 'semiannual', 'annual'].includes(String(filters.plan))) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'Invalid subscription plan');
+      }
+      query.plan = filters.plan;
+    }
+
+    const [items, total] = await Promise.all([
+      Subscription.find(query)
+        .populate('ownerId', 'name email isActive')
+        .sort('-updatedAt')
+        .skip(pagination.skip)
+        .limit(pagination.limit),
+      Subscription.countDocuments(query)
+    ]);
+
+    return { items, total, page: pagination.page, limit: pagination.limit, pages: Math.ceil(total / pagination.limit) };
   }
 
   static async processExpiredSubscriptions() {

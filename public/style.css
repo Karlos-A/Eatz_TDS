@@ -1,0 +1,274 @@
+:root {
+    --eatz-olive-dark: #343a06;
+    --eatz-purple-dark: #282023;
+    --eatz-olive: #527c23;
+    --eatz-brown: #886750;
+    --eatz-yellow: #fbd862;
+    --eatz-peach: #cbb090;
+    --eatz-orange: #fca500;
+    --eatz-gray: #e0d9ce;
+    --eatz-blue: #9db1dc;
+    --eatz-white: #ffffff;
+    --navbar-height: 80px;
+    --container-width: 1200px;
+    --transition-speed: 0.35s;
+    --font-logo: Georgia, "Times New Roman", serif;
+    --font-title: Georgia, "Times New Roman", serif;
+    --font-headline: "Ts Damas Sans", "Trebuchet MS", sans-serif;
+    --font-body: Inter, "Segoe UI", Tahoma, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    color: var(--eatz-purple-dark);
+    background: var(--eatz-white);
+    font-family: var(--font-body);
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    width: 100%;
+    height: var(--navbar-height);
+    display: flex;
+    align-items: center;
+    background: transparent;
+    color: var(--eatz-white);
+    box-shadow: none;
+    transition: transform var(--transition-speed) ease-in-out,
+                background-color var(--transition-speed) ease,
+                box-shadow var(--transition-speed) ease;
+}
+
+.navbar.is-solid,
+.navbar.is-scrolled {
+    background: var(--eatz-white);
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: var(--eatz-gray);
+    box-shadow: 0 2px 12px rgba(40, 32, 35, 0.12);
+}
+
+.navbar.is-hidden {
+    transform: translateY(-100%);
+}
+
+.navbar__container {
+    width: 100%;
+    max-width: var(--container-width);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.navbar__brand {
+    color: var(--eatz-white);
+    font-family: var(--font-logo);
+    font-size: 2rem;
+    font-style: italic;
+    font-weight: bold;
+    text-shadow: 0 1px 3px rgba(40, 32, 35, 0.5);
+}
+
+.navbar.is-solid .navbar__brand,
+.navbar.is-scrolled .navbar__brand,
+.navbar.is-solid .navbar__link,
+.navbar.is-scrolled .navbar__link {
+    color: var(--eatz-olive-dark);
+    text-shadow: none;
+}
+
+.navbar__toggle {
+    display: block;
+    border: 0;
+    padding: 0.5rem;
+    background: transparent;
+    cursor: pointer;
+}
+
+.navbar__toggle .bar {
+    display: block;
+    width: 25px;
+    height: 3px;
+    margin: 5px 0;
+    border-radius: 2px;
+    background: var(--eatz-olive-dark);
+}
+
+.navbar__menu {
+    display: none;
+    position: absolute;
+    top: var(--navbar-height);
+    left: 0;
+    width: 100%;
+    flex-direction: column;
+    background: var(--eatz-white);
+    box-shadow: 0 8px 16px rgba(40, 32, 35, 0.12);
+}
+
+.navbar__menu.is-active {
+    display: flex;
+}
+
+.navbar__item {
+    text-align: center;
+    border-top-width: 1px;
+    border-top-style: solid;
+    border-top-color: var(--eatz-gray);
+}
+
+.navbar__link {
+    display: block;
+    padding: 1.25rem;
+    color: var(--eatz-olive-dark);
+    font-family: var(--font-headline);
+    font-weight: 700;
+    transition: color var(--transition-speed) ease;
+}
+
+.navbar__link:hover {
+    color: var(--eatz-orange);
+}
+
+.hero-section {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background-size: cover;
+    background-position: center;
+    color: var(--eatz-white);
+}
+
+.hero-section h1 {
+    color: var(--eatz-white);
+    font-family: var(--font-title);
+    font-size: clamp(2.5rem, 7vw, 5rem);
+    text-shadow: 0 2px 6px rgba(40, 32, 35, 0.6);
+}
+
+.landing-hero {
+    background-image: url("/images/Dinner%20Party%20Food%20Item%2C%20Dinner%20Food%20Background%2C%20Dinner%20Food%2C%20Fastfood%20Background%20Image%20And%20Wallpaper%20for%20Free%20Download.jpeg");
+}
+
+.page-main,
+.content-section {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 120px 1.5rem 3rem;
+    line-height: 1.7;
+}
+
+.page-main h1,
+.content-section h1,
+.content-section h2 {
+    font-family: var(--font-title);
+}
+
+.restaurant-create__form {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.restaurant-create__section[hidden] {
+    display: none;
+}
+
+.restaurant-create__section h2 {
+    margin-bottom: 0;
+    font-family: var(--font-title);
+}
+
+.restaurant-create__form input,
+.restaurant-create__form textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--eatz-gray);
+    border-radius: 4px;
+    font: inherit;
+}
+
+.restaurant-create__form button {
+    justify-self: start;
+    padding: 0.75rem 1.25rem;
+    border: 0;
+    border-radius: 4px;
+    color: var(--eatz-white);
+    background: var(--eatz-olive);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.restaurant-create__form button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+.restaurant-create__message {
+    min-height: 1.5em;
+    margin: 0;
+}
+
+@media (min-width: 768px) {
+    .navbar__toggle {
+        display: none;
+    }
+
+    .navbar__menu {
+        display: flex;
+        position: static;
+        width: auto;
+        flex-direction: row;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .navbar__list {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .navbar__item {
+        border-top: 0;
+    }
+
+    .navbar__link {
+        padding: 0.5rem 0;
+        color: var(--eatz-white);
+        text-shadow: 0 1px 3px rgba(40, 32, 35, 0.5);
+    }
+
+    .navbar.is-solid .navbar__link,
+    .navbar.is-scrolled .navbar__link {
+        text-shadow: none;
+    }
+}

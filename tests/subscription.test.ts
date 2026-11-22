@@ -78,4 +78,73 @@ describe('Subscription Business Rules & Lifecycle', () => {
       assert.equal(error.code, 'TRIAL_ALREADY_USED');
     }
   });
+
+  test('subscribe con card deja la renovación pendiente y no paid', async () => {
+    const mockSub: any = {
+      ownerId: '507f1f77bcf86cd799439011',
+      plan: 'free_trial',
+      status: 'active',
+      endDate: new Date(Date.now() + 86400000),
+      paymentMethod: 'none',
+      paymentStatus: 'none',
+      paymentMode: 'none',
+      save: async function () { return this; }
+    };
+    mock.method(Subscription, 'findOne', async () => mockSub);
+
+    const result = await SubscriptionService.subscribe(mockSub.ownerId, {
+      plan: 'monthly',
+      paymentMethod: 'card'
+    });
+
+    assert.equal(result.paymentStatus, 'pending');
+    assert.equal(result.paymentMode, 'simulated');
+    assert.equal(result.pendingPlan, 'monthly');
+  });
+
+  test('confirmPayment puede marcar una renovación simulada como failed', async () => {
+    const mockSub: any = {
+      ownerId: '507f1f77bcf86cd799439011',
+      plan: 'free_trial',
+      status: 'active',
+      endDate: new Date(Date.now() + 86400000),
+      paymentStatus: 'pending',
+      pendingPlan: 'monthly',
+      pendingEndDate: new Date(Date.now() + 31 * 86400000),
+      save: async function () { return this; }
+    };
+    mock.method(Subscription, 'findOne', async () => mockSub);
+
+    const result = await SubscriptionService.confirmPayment(mockSub.ownerId, { status: 'failed' });
+    assert.equal(result.paymentStatus, 'failed');
+    assert.equal(result.plan, 'free_trial');
+  });
+
+  test('getMySubscription devuelve los días restantes', async () => {
+    const mockSub: any = {
+      ownerId: '507f1f77bcf86cd799439011',
+      status: 'active',
+      endDate: new Date(Date.now() + 10 * 86400000),
+      save: async function () { return this; }
+    };
+    mock.method(Subscription, 'findOne', async () => mockSub);
+
+    const result = await SubscriptionService.getMySubscription(mockSub.ownerId);
+    assert.equal(result.remainingDays, 10);
+  });
+
+  test('cancelPendingRenewal cancela únicamente una renovación pendiente', async () => {
+    const mockSub: any = {
+      ownerId: '507f1f77bcf86cd799439011',
+      paymentStatus: 'pending',
+      pendingPlan: 'monthly',
+      pendingEndDate: new Date(Date.now() + 30 * 86400000),
+      save: async function () { return this; }
+    };
+    mock.method(Subscription, 'findOne', async () => mockSub);
+
+    const result = await SubscriptionService.cancelPendingRenewal(mockSub.ownerId);
+    assert.equal(result.paymentStatus, 'failed');
+    assert.equal(result.pendingPlan, undefined);
+  });
 });

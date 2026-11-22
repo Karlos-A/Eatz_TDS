@@ -12,6 +12,7 @@ import {
   requireText
 } from '../utils/request-validation.js';
 import { SubscriptionService } from './subscription.service.js';
+import { Subscription } from '../models/subscription.model.js';
 
 export class RestaurantService {
   static async create(ownerId: string, data: unknown) {
@@ -43,16 +44,31 @@ export class RestaurantService {
       query.name = new RegExp(escapeRegex(search), 'i');
     }
 
-    const [items, total] = await Promise.all([
-      Restaurant.find(query).populate('ownerId', 'name').sort('name').skip(pagination.skip).limit(pagination.limit),
+    const [restaurants, total] = await Promise.all([
+      Restaurant.find(query).populate('ownerId', 'name').sort('name'),
       Restaurant.countDocuments(query)
     ]);
-    return { items, total, page: pagination.page, limit: pagination.limit, pages: Math.ceil(total / pagination.limit) };
+    const ownerIds = restaurants.map((restaurant) => restaurant.ownerId);
+    const activeSubscriptions = await Subscription.find({
+      ownerId: { $in: ownerIds },
+      status: 'active',
+      endDate: { $gte: new Date() }
+    }).select('ownerId');
+    const visibleOwnerIds = new Set(activeSubscriptions.map((sub) => sub.ownerId.toString()));
+    const visible = restaurants.filter((restaurant) => visibleOwnerIds.has(restaurant.ownerId.toString()));
+    const items = visible.slice(pagination.skip, pagination.skip + pagination.limit);
+    return { items, total: visible.length, page: pagination.page, limit: pagination.limit, pages: Math.ceil(visible.length / pagination.limit) };
   }
 
   static async getById(id: string) {
     const restaurant = await Restaurant.findOne({ _id: id, isActive: true });
     if (!restaurant) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found');
+    const sub = await Subscription.findOne({
+      ownerId: restaurant.ownerId,
+      status: 'active',
+      endDate: { $gte: new Date() }
+    });
+    if (!sub) throw new AppError(404, 'NOT_FOUND', 'Restaurant not found');
     return restaurant;
   }
 

@@ -67,11 +67,32 @@ El flujo de una petición HTTP en Eatz sigue un patrón MVC extendido:
 
 La API RESTful responde y consume formato `application/json`. Todas las rutas protegidas requieren el encabezado `Authorization: Bearer <Token>`.
 
+### Estado real de pagos
+
+Eatz usa pagos **simulados**. Elegir `card` no significa que exista un cargo verificado:
+`paymentMode` es `simulated` y `paymentStatus` comienza en `pending`. El endpoint
+`POST /api/subscriptions/confirm-payment` permite indicar `paid` o `failed` en pruebas.
+No se debe interpretar `paid` como un cargo real hasta integrar un proveedor externo.
+La única base de ruta oficial es `/api/subscriptions`; `/api/subscription` no está registrado.
+
+### Visibilidad comercial
+
+El catálogo público solo incluye restaurantes activos cuyo dueño tenga una suscripción
+`active` con `endDate` vigente. Esta regla se aplica igualmente en el listado y el detalle.
+
 ### Autenticación (`/api/auth`)
 | Método | Endpoint | Descripción | Acceso |
 | :--- | :--- | :--- | :--- |
-| POST | `/register` | Registra una nueva cuenta (`client` o `user`) | Público |
+| POST | `/register` | Registra una nueva cuenta `user` | Público |
 | POST | `/login` | Inicia sesión y devuelve el token JWT | Público |
+| GET | `/me` | Devuelve el perfil del token actual | Token válido |
+
+### Administración (`/api/admin`)
+| Método | Endpoint | Descripción | Acceso |
+| :--- | :--- | :--- | :--- |
+| POST | `/clients` | Crea un cliente y su trial | `admin` |
+| GET | `/clients` | Lista clientes filtrables por estado | `admin` |
+| PATCH | `/clients/:id/status` | Activa o suspende una cuenta (`isActive`) | `admin` |
 
 ### Restaurantes (`/api/restaurants`)
 | Método | Endpoint | Descripción | Acceso |
@@ -97,3 +118,14 @@ La API RESTful responde y consume formato `application/json`. Todas las rutas pr
 | GET | `/my-orders` | Lista el historial de pedidos del comensal | `user` |
 | GET | `/restaurant/:id` | Bandeja de entrada de órdenes recibidas | `client` |
 | PATCH | `/:id/status` | Actualiza el estado (`pending`, `preparing`, etc.) | `client` |
+| PATCH | `/:id/cancel` | Cancela un pedido pendiente | `user` |
+
+### Suscripciones (`/api/subscriptions`)
+| Método | Endpoint | Descripción | Acceso |
+| :--- | :--- | :--- | :--- |
+| POST | `/` | Inicia una renovación simulada en estado `pending` | `client` |
+| POST | `/confirm-payment` | Confirma o rechaza la renovación simulada | `client` |
+| GET | `/me` | Consulta la suscripción y los días restantes | `client` |
+| PATCH | `/cancel` | Cancela una renovación pendiente | `client` |
+| GET | `/` | Lista suscripciones con filtros de estado y plan | `admin` |
+| POST | `/verify-expirations` | Marca suscripciones vencidas como expiradas | `admin` |

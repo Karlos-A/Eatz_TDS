@@ -1,7 +1,7 @@
 import { User } from '../models/user.model.js';
 import { AppError } from '../utils/app-error.js';
 import { hashPassword } from '../utils/password.js';
-import { assertAllowedFields, readBody, requireText } from '../utils/request-validation.js';
+import { assertAllowedFields, parsePagination, readBody, requireObjectId, requireText } from '../utils/request-validation.js';
 import { SubscriptionService } from './subscription.service.js';
 
 export class AdminService {
@@ -34,7 +34,20 @@ export class AdminService {
       isActive: true 
     });
 
-    await SubscriptionService.createFreeTrial(client.id);
+    try {
+      await SubscriptionService.createFreeTrial(client.id);
+    } catch (error) {
+      try {
+        await User.deleteOne({ _id: client._id });
+      } catch {
+        throw new AppError(
+          500,
+          'CLIENT_RECOVERY_REQUIRED',
+          `Client ${client.id} was created but trial setup failed and automatic rollback failed`
+        );
+      }
+      throw error;
+    }
     
     return { 
       id: client.id, 
@@ -43,5 +56,39 @@ export class AdminService {
       role: client.role,
       isActive: client.isActive
     };
+  }
+
+  static async setUserActive(userId: string, isActive: boolean) {
+    requireObjectId(userId);
+    const client = await User.findByIdAndUpdate(
+      userId,
+      { $set: { isActive } },
+      { new: true, runValidators: true }
+    ).select('name email role isActive');
+    if (!client) throw new AppError(404, 'NOT_FOUND', 'User not found');
+    return client;
+  }
+
+  static async listClients(filters: { status?: unknown; page?: unknown; limit?: unknown }) {
+    const pagination = parsePagination(filters.page, filters.limit);
+    const query: Record<string, unknown> = { role: 'client' };
+
+    if (filters.status !== undefined) {
+      if (!['active', 'inactive', 'suspended'].includes(String(filters.status))) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'Status must be active or inactive');
+      }
+      query.isActive = filters.status === 'active';
+    }
+
+    const [items, total] = await Promise.all([
+      User.find(query)
+        .select('name email role isActive createdAt')
+        .sort('-createdAt')
+        .skip(pagination.skip)
+        .limit(pagination.limit),
+      User.countDocuments(query)
+    ]);
+
+    return { items, total, page: pagination.page, limit: pagination.limit, pages: Math.ceil(total / pagination.limit) };
   }
 }

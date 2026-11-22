@@ -8,7 +8,8 @@ export function isOrderStatus(value: unknown): value is OrderStatus {
 }
 
 export const paymentMethods = ['on_delivery', 'card'] as const;
-export const paymentStatuses = ['pending', 'paid'] as const;
+export const paymentStatuses = ['pending', 'paid', 'failed'] as const;
+export const paymentModes = ['none', 'simulated'] as const;
 
 export interface IOrderItem {
   menuItemId: Types.ObjectId;
@@ -27,6 +28,7 @@ export interface IOrder extends Document {
   deliveryAddress: string;
   paymentMethod: string;
   paymentStatus: string;
+  paymentMode: 'none' | 'simulated';
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -53,6 +55,7 @@ const orderSchema = new Schema<IOrder>(
     deliveryAddress: { type: String, required: true, trim: true },
     paymentMethod: { type: String, enum: paymentMethods, required: true, default: 'on_delivery' },
     paymentStatus: { type: String, enum: paymentStatuses, required: true, default: 'pending' },
+    paymentMode: { type: String, enum: paymentModes, required: true, default: 'none' },
     notes: { type: String, trim: true }
   },
   { timestamps: true }

@@ -83,7 +83,8 @@ export class OrderService {
       });
     }
 
-    const paymentStatus = paymentMethod === 'card' ? 'paid' : 'pending';
+    const paymentStatus = 'pending';
+    const paymentMode = paymentMethod === 'card' ? 'simulated' : 'none';
 
     const order = await Order.create({
       customerId,
@@ -93,6 +94,7 @@ export class OrderService {
       deliveryAddress,
       paymentMethod,
       paymentStatus,
+      paymentMode,
       notes
     });
 
@@ -149,9 +151,15 @@ export class OrderService {
       throw new AppError(409, 'INVALID_ORDER_TRANSITION', `Cannot move an order from ${order.status} to ${status}`);
     }
 
-    order.status = status;
-    await order.save();
-    return order;
+    const updated = await Order.findOneAndUpdate(
+      { _id: orderId, status: order.status },
+      { $set: { status } },
+      { new: true, runValidators: true }
+    );
+    if (!updated) {
+      throw new AppError(409, 'ORDER_CONCURRENT_UPDATE', 'The order status changed concurrently');
+    }
+    return updated;
   }
 
   // Solo permite al cliente cancelar su propio pedido mientras el restaurante aún no lo prepara.
@@ -162,8 +170,14 @@ export class OrderService {
     if (order.status !== 'pending') {
       throw new AppError(409, 'INVALID_ORDER_TRANSITION', 'Only pending orders can be cancelled by the customer');
     }
-    order.status = 'cancelled';
-    await order.save();
-    return order;
+    const updated = await Order.findOneAndUpdate(
+      { _id: orderId, customerId, status: 'pending' },
+      { $set: { status: 'cancelled' } },
+      { new: true, runValidators: true }
+    );
+    if (!updated) {
+      throw new AppError(409, 'ORDER_CONCURRENT_UPDATE', 'The order status changed concurrently');
+    }
+    return updated;
   }
 }

@@ -4,6 +4,8 @@ import { OrderService } from '../src/services/order.service.js';
 import { Order } from '../src/models/order.model.js';
 import { Restaurant } from '../src/models/restaurant.model.js';
 import { AppError } from '../src/utils/app-error.js';
+import { MenuItem } from '../src/models/menuItem.model.js';
+import { SubscriptionService } from '../src/services/subscription.service.js';
 
 describe('Order State Transitions & Business Rules', () => {
   afterEach(() => {
@@ -52,5 +54,33 @@ describe('Order State Transitions & Business Rules', () => {
       assert.equal(error.code, 'INVALID_ORDER_TRANSITION');
       assert.match(error.message, /pending orders can be cancelled/);
     }
+  });
+
+  test('createOrder con card se guarda pendiente y como pago simulado', async () => {
+    const restaurantId = '607f1f77bcf86cd799439012';
+    const itemId = '707f1f77bcf86cd799439013';
+    mock.method(SubscriptionService, 'assertActiveSubscription', async () => true);
+    mock.method(Restaurant, 'findById', async () => ({
+      _id: restaurantId,
+      ownerId: '507f1f77bcf86cd799439011',
+      isActive: true
+    }));
+    mock.method(MenuItem, 'findOne', async () => ({
+      id: itemId,
+      name: 'Taco',
+      price: 5,
+      available: true
+    }));
+    mock.method(Order, 'create', async (data: any) => ({ id: '807f1f77bcf86cd799439014', ...data }));
+
+    const result = await OrderService.createOrder('507f1f77bcf86cd799439011', {
+      restaurantId,
+      items: [{ menuItemId: itemId, quantity: 2 }],
+      deliveryAddress: 'Main Street',
+      paymentMethod: 'card'
+    });
+
+    assert.equal(result.paymentStatus, 'pending');
+    assert.equal(result.paymentMode, 'simulated');
   });
 });

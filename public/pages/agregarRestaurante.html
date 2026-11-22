@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eatz - Agregar Restaurante</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="navbar is-solid" id="main-navbar">
+        <div class="navbar__container">
+            <a href="/" class="navbar__brand">Eatz</a>
+            <button class="navbar__toggle" id="navbarToggle" aria-label="Abrir navegación" aria-expanded="false" aria-controls="navbarMenu">
+                <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+            </button>
+            <nav id="navbarMenu" class="navbar__menu" role="navigation">
+                <ul class="navbar__list">
+                    <li class="navbar__item"><a href="/" class="navbar__link">Inicio</a></li>
+                    <li class="navbar__item"><a href="/login" class="navbar__link">Iniciar sesión</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="page-main restaurant-create">
+        <h1>Gestiona tu restaurante</h1>
+        <p>Inicia sesión con tu cuenta de restaurante.</p>
+        <section id="restaurantLoginSection" class="restaurant-create__section">
+            <h2>Iniciar sesión como restaurante</h2>
+            <form id="restaurantLoginForm" class="restaurant-create__form">
+                <label for="loginEmail">Correo electrónico</label>
+                <input id="loginEmail" name="email" type="email" autocomplete="username" required>
+
+                <label for="loginPassword">Contraseña</label>
+                <input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+
+                <button type="submit">Iniciar sesión</button>
+                <p id="restaurantLoginMessage" class="restaurant-create__message" role="status" aria-live="polite"></p>
+            </form>
+        </section>
+
+        <section id="restaurantProfileSection" class="restaurant-create__section" hidden>
+            <h2>Datos del restaurante</h2>
+            <p id="restaurantSessionMessage"></p>
+            <button id="changeRestaurantAccount" type="button">Cambiar cuenta</button>
+            <form id="restaurantForm" class="restaurant-create__form">
+                <label for="name">Nombre del restaurante</label>
+                <input id="name" name="name" type="text" maxlength="120" required>
+
+                <label for="category">Categoría</label>
+                <input id="category" name="category" type="text" maxlength="80" required>
+
+                <label for="address">Dirección</label>
+                <input id="address" name="address" type="text" maxlength="300" required>
+
+                <label for="phone">Teléfono</label>
+                <input id="phone" name="phone" type="tel" maxlength="40" required>
+
+                <label for="description">Descripción (opcional)</label>
+                <textarea id="description" name="description" rows="4"></textarea>
+
+                <button type="submit">Agregar restaurante</button>
+                <p id="restaurantFormMessage" class="restaurant-create__message" role="status" aria-live="polite"></p>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        const restaurantForm = document.getElementById('restaurantForm');
+        const restaurantFormMessage = document.getElementById('restaurantFormMessage');
+        const restaurantLoginForm = document.getElementById('restaurantLoginForm');
+        const restaurantLoginMessage = document.getElementById('restaurantLoginMessage');
+        const restaurantLoginSection = document.getElementById('restaurantLoginSection');
+        const restaurantProfileSection = document.getElementById('restaurantProfileSection');
+        const restaurantSessionMessage = document.getElementById('restaurantSessionMessage');
+        const storedUser = JSON.parse(localStorage.getItem('eatz_user') || 'null');
+        let restaurantToken = localStorage.getItem('eatz_token');
+
+        async function requestJson(url, options) {
+            const response = await fetch(url, options);
+            let result;
+
+            try {
+                result = await response.json();
+            } catch {
+                throw new Error('El servidor devolvió una respuesta inválida.');
+            }
+
+            if (!response.ok) {
+                throw new Error(result.error?.message || result.message || 'No fue posible completar la solicitud.');
+            }
+
+            return result;
+        }
+
+        function showRestaurantProfile(user) {
+            restaurantLoginSection.hidden = true;
+            restaurantProfileSection.hidden = false;
+            restaurantSessionMessage.textContent = `Sesión iniciada como ${user.name}.`;
+        }
+
+        if (restaurantToken && storedUser?.role === 'client') {
+            showRestaurantProfile(storedUser);
+        }
+
+        restaurantLoginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const submitButton = restaurantLoginForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            restaurantLoginMessage.textContent = 'Iniciando sesión...';
+
+            try {
+                const result = await requestJson('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: restaurantLoginForm.elements.email.value.trim().toLowerCase(),
+                        password: restaurantLoginForm.elements.password.value
+                    })
+                });
+
+                if (result.data.user.role !== 'client') {
+                    throw new Error('Esta cuenta no es una cuenta de restaurante.');
+                }
+
+                restaurantToken = result.data.token;
+                localStorage.setItem('eatz_token', restaurantToken);
+                localStorage.setItem('eatz_user', JSON.stringify(result.data.user));
+                showRestaurantProfile(result.data.user);
+                restaurantLoginForm.reset();
+                restaurantLoginMessage.textContent = '';
+            } catch (error) {
+                restaurantLoginMessage.textContent = error instanceof Error
+                    ? error.message
+                    : 'No fue posible iniciar sesión.';
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+
+        document.getElementById('changeRestaurantAccount').addEventListener('click', () => {
+            localStorage.removeItem('eatz_token');
+            localStorage.removeItem('eatz_user');
+            restaurantToken = null;
+            restaurantProfileSection.hidden = true;
+            restaurantLoginSection.hidden = false;
+            restaurantSessionMessage.textContent = '';
+        });
+
+        restaurantForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const submitButton = restaurantForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            restaurantFormMessage.textContent = 'Registrando restaurante...';
+
+            try {
+                const payload = {
+                    name: restaurantForm.elements.name.value.trim(),
+                    category: restaurantForm.elements.category.value.trim(),
+                    address: restaurantForm.elements.address.value.trim(),
+                    phone: restaurantForm.elements.phone.value.trim(),
+                    description: restaurantForm.elements.description.value.trim()
+                };
+
+                await requestJson('/api/restaurants', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${restaurantToken}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                restaurantForm.reset();
+                restaurantFormMessage.textContent = 'Restaurante agregado correctamente.';
+            } catch (error) {
+                restaurantFormMessage.textContent = error instanceof Error
+                    ? error.message
+                    : 'Ocurrió un error al agregar el restaurante.';
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

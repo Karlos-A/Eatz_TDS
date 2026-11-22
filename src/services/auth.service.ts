@@ -54,6 +54,9 @@ export class AuthService {
     if (!user || !(await comparePassword(password, user.passwordHash))) {
       throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
     }
+    if (!user.isActive) {
+      throw new AppError(403, 'ACCOUNT_INACTIVE', 'This account has been suspended');
+    }
 
     const token = createAccessToken(user.id, user.role);
     return { user: { id: user.id, name: user.name, email: user.email, role: user.role }, token };

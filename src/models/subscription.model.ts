@@ -3,7 +3,8 @@ import { model, Schema, Document, Types } from 'mongoose';
 export const plans = ['free_trial', 'monthly', 'semiannual', 'annual'] as const;
 export const subStatuses = ['active', 'expired', 'cancelled'] as const;
 export const subPaymentMethods = ['none', 'card', 'transfer'] as const;
-export const subPaymentStatuses = ['none', 'pending', 'paid'] as const;
+export const subPaymentStatuses = ['none', 'pending', 'paid', 'failed'] as const;
+export const subPaymentModes = ['none', 'simulated'] as const;
 
 export type Plan = (typeof plans)[number];
 export type SubStatus = (typeof subStatuses)[number];
@@ -16,6 +17,9 @@ export interface ISubscription extends Document {
   endDate: Date;
   paymentMethod: string;
   paymentStatus: string;
+  paymentMode: 'none' | 'simulated';
+  pendingPlan?: Plan;
+  pendingEndDate?: Date;
   trialUsed: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -30,6 +34,9 @@ const subscriptionSchema = new Schema<ISubscription>(
     endDate: { type: Date, required: true },
     paymentMethod: { type: String, enum: subPaymentMethods, required: true },
     paymentStatus: { type: String, enum: subPaymentStatuses, required: true },
+    paymentMode: { type: String, enum: subPaymentModes, required: true, default: 'none' },
+    pendingPlan: { type: String, enum: plans },
+    pendingEndDate: { type: Date },
     trialUsed: { type: Boolean, required: true, default: false }
   },
   { timestamps: true }

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eatz</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <header class="navbar" id="main-navbar">
+        <div class="navbar__container">
+            <a href="/" class="navbar__brand">Eatz</a>
+            <button class="navbar__toggle" id="navbarToggle" aria-label="Abrir navegación" aria-expanded="false" aria-controls="navbarMenu">
+                <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+            </button>
+            <nav id="navbarMenu" class="navbar__menu" role="navigation">
+                <ul class="navbar__list">
+                    <li class="navbar__item"><a href="/pages/agregarRestaurante.html" class="navbar__link">Restaurantes</a></li>
+                    <li class="navbar__item"><a href="/menu" class="navbar__link">Menú</a></li>
+                    <li class="navbar__item"><a href="/login" class="navbar__link">Iniciar sesión</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero-section landing-hero">
+        <h1>Tu comida, tu elección</h1>
+    </section>
+
+    <main class="content-section">
+        <h2>Descubre Eatz</h2>
+        <p>Explora restaurantes y consulta sus menús. Para agregar platillos al carrito, crear pedidos o administrar un restaurante debes iniciar sesión.</p>
+    </main>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const navbarToggle = document.getElementById('navbarToggle');
+        const navbarMenu = document.getElementById('navbarMenu');
+        const mainNavbar = document.getElementById('main-navbar');
+
+        if (navbarToggle && navbarMenu) {
+            navbarToggle.addEventListener('click', () => {
+                const isActive = navbarMenu.classList.toggle('is-active');
+                navbarToggle.setAttribute('aria-expanded', String(isActive));
+                navbarToggle.setAttribute('aria-label', isActive ? 'Cerrar navegación' : 'Abrir navegación');
+            });
+        }
+
+        if (mainNavbar) {
+            const updateNavbar = () => {
+                mainNavbar.classList.toggle('is-scrolled', window.scrollY > 10);
+            };
+            window.addEventListener('scroll', updateNavbar, { passive: true });
+            updateNavbar();
+        }
+    });
+    </script>
+</body>
+</html>
